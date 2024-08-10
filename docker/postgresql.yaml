@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./.docker/postgres:/var/lib/postgresql/data
+      - type: tmpfs
+        target: /dev/shm
+        tmpfs:
+          size: 10240000000
+    ports:
+      - 5432:5432
