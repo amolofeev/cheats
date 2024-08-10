@@ -1,0 +1,4 @@
+.*
+!.gitignore
+!.dockerignore
+__pychache__/
