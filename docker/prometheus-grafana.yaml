@@ -1,0 +1,21 @@
+services:
+  grafana:
+    image: grafana/grafana-enterprise
+    user: root
+    network_mode: host
+    depends_on:
+      - prometheus
+    volumes:
+      - ./.docker/grafana:/var/lib/grafana
+
+  prometheus:
+    image: prom/prometheus:latest
+    user: root
+    network_mode: host
+    volumes:
+      - ./.docker/prometheus/:/etc/prometheus/
+      - ./.docker/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
