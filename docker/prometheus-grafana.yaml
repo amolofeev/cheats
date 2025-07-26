@@ -3,6 +3,8 @@ services:
     image: grafana/grafana-enterprise
     user: root
     network_mode: host
+    ports:
+      - 3000:3000
     depends_on:
       - prometheus
     volumes:
@@ -12,10 +14,18 @@ services:
     image: prom/prometheus:latest
     user: root
     network_mode: host
+    ports:
+      - 9090:9090
     volumes:
-      - ./.docker/prometheus/:/etc/prometheus/
-      - ./.docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./files:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+
+  pushgateway:
+    image: prom/pushgateway:latest
+    ports:
+      - 9091:9091
+    labels:
+      org.label-schema.group: "monitoring"
