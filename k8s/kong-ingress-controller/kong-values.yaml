@@ -1,0 +1,22 @@
+ingressController:
+  enabled: true
+
+# админка удобна, когда надо трейсить почему что-то не завелось. / сервиса выплевывает огромный json, в котором сложно разобраться, но снапшот конфигов не плохой
+#admin:
+#  enabled: true
+#  tls:
+#    enabled: true
+#  http:
+#    enabled: true
+#  type: ClusterIP
+
+proxy:
+  type: LoadBalancer
+
+env:
+  # Включение плагина телеметрии
+  plugins: "bundled,opentelemetry"
+
+envFrom:
+  - configMapRef:
+      name: kong

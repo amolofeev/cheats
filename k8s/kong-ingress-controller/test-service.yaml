@@ -1,0 +1,172 @@
+# 1 раз создать GatewayClass + Gateway + KongPlugin
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kong
+  annotations:
+    konghq.com/gatewayclass-unmanaged: 'true'
+spec:
+  controllerName: konghq.com/kic-gateway-controller
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: kong
+spec:
+  gatewayClassName: kong
+  listeners:
+  - name: proxy
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+         from: All
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: limit-1kb
+config:
+  allowed_payload_size: 1
+  size_unit: "kilobytes"
+plugin: request-size-limiting
+
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: limit-2kb
+config:
+  allowed_payload_size: 2
+  size_unit: "kilobytes"
+plugin: request-size-limiting
+
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: limit-10kb
+config:
+  allowed_payload_size: 10
+  size_unit: "kilobytes"
+plugin: request-size-limiting
+
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: limit-100kb
+config:
+  allowed_payload_size: 100
+  size_unit: "kilobytes"
+plugin: request-size-limiting
+---
+# Тестовый echo сервис
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+        - name: echo
+          image: kennethreitz/httpbin
+          ports:
+            - containerPort: 80
+          env:
+            - name: PORT
+              value: "80"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo
+spec:
+  selector:
+    app: echo
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+---
+# настройка ингреса
+# curl -X POST -d @somefile http://host:port/echo/1kb/post
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echo-routes
+  annotations:
+    konghq.com/strip-path: 'true'
+spec:
+  parentRefs:
+    - name: kong
+      kind: Gateway
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /echo/1kb
+      backendRefs:
+        - name: echo
+          kind: Service
+          port: 80
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: configuration.konghq.com
+            kind: KongPlugin
+            name: limit-1kb
+
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /echo/2kb
+      backendRefs:
+        - name: echo
+          kind: Service
+          port: 80
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: configuration.konghq.com
+            kind: KongPlugin
+            name: limit-2kb
+
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /echo/10kb
+      backendRefs:
+        - name: echo
+          kind: Service
+          port: 80
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: configuration.konghq.com
+            kind: KongPlugin
+            name: limit-10kb
+
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /echo/100kb
+      backendRefs:
+        - name: echo
+          kind: Service
+          port: 80
+      filters:
+        - type: ExtensionRef
+          extensionRef:
+            group: configuration.konghq.com
+            kind: KongPlugin
+            name: limit-100kb

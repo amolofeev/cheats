@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
+        ports:
+        - containerPort: 16686
+          name: webui
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  type: ClusterIP
+  ports:
+  - name: webui
+    port: 16686
+    targetPort: 16686
+#  - name: http-collector
+#    port: 14268
+#    targetPort: 14268
+#  - name: agent-compact
+#    port: 5775
+#    targetPort: 5775
+#    protocol: UDP
+#  - name: agent-binary
+#    port: 6831
+#    targetPort: 6831
+#    protocol: UDP
+#  - name: agent-thrift
+#    port: 6832
+#    targetPort: 6832
+#    protocol: UDP
+#  - name: config
+#    port: 5778
+#    targetPort: 5778
+#  - name: zipkin
+#    port: 9411
+#    targetPort: 9411
+#  - name: admin
+#    port: 14269
+#    targetPort: 14269
+#  - name: oltp1
+#    port: 4317
+#    targetPort: 4317
+  - name: oltp2
+    port: 4318
+    targetPort: 4318
+---
+# интеграция kong -> jaeger
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: jaeger-tracing
+  labels:
+    global: "true"
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/protocols: "http,https"
+plugin: opentelemetry
+config:
+  endpoint: "http://jaeger:4318/v1/traces"  # Замените на ваш OTEL endpoint
+  header_type: w3c
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong
+data:
+  KONG_TRACING_INSTRUMENTATIONS: "all"
+  KONG_TRACING_SAMPLING_RATE: "1.0"
