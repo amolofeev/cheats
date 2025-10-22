@@ -13,9 +13,9 @@ ingressController:
 proxy:
   type: LoadBalancer
 
-env:
-  # Включение плагина телеметрии
-  plugins: "bundled,opentelemetry"
+#env:
+#  # судя по исходникам, это не включает, а наоборот отключает не указанные в этом списке. без этого и так все отлично работает.
+#  plugins: "bundled,opentelemetry"
 
 envFrom:
   - configMapRef:
