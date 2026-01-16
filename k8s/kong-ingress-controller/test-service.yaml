@@ -107,6 +107,8 @@ metadata:
   annotations:
     konghq.com/strip-path: 'true'
 spec:
+  hostnames:
+    - test.dev
   parentRefs:
     - name: kong
       kind: Gateway

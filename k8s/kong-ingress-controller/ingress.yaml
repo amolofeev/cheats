@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kong-root
+  namespace: default
+  labels:
+    app.kubernetes.io/instance: kong-root
+    app.kubernetes.io/name: kong-root
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: test.dev
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kong-kong-proxy
+                port:
+                  number: 80
